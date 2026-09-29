@@ -1,0 +1,88 @@
+schema_version: experiment-1
+status: FROZEN
+protocol_version: 1
+process:
+  nx: 16
+  ny: 16
+  lx: 0.12
+  ly: 0.04
+  thickness: 0.02
+  rho: 7800.0
+  cp: 500.0
+  k: 40.0
+  h: [25.0, 25.0, 25.0]
+  emissivity: [0.7, 0.7, 0.7]
+  zone_capacity: [2000.0, 2000.0, 2000.0]
+  zone_efficiency: [0.85, 0.85, 0.85]
+  zone_loss: [2.0, 2.0, 2.0]
+  zone_coupling: [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+  pmax: [2000.0, 2000.0, 2000.0]
+  slew: [400.0, 400.0, 400.0]
+  ambient: 293.15
+  initial: 293.15
+  solid_limit: 723.15
+  zone_limit: 773.15
+data:
+  train_trajectories: 24
+  validation_trajectories: 6
+  calibration_trajectories: 6
+  steps: 90
+  horizon: 12
+  control_dt_s: 10.0
+  max_step_s: 2.0
+  seed: 20261001
+training:
+  seeds: [101, 202, 303]
+  width: 24
+  layers: 4
+  modes: 8
+  epochs: 40
+  batch_size: 8
+  patience: 10
+  physics_weight: 0.01
+  learning_rate: 0.001
+evaluation:
+  grid: [32, 32]
+  episode_steps: 90
+  control_dt_s: 10.0
+  max_step_s: 2.0
+  reference_initial_K: 293.15
+  reference_target_K: 340.0
+  reference_ramp_s: 600.0
+  observation: partial
+  pid_gains: [80.0, 0.02]
+  mpc:
+    horizon: 12
+    blocks: 4
+    candidates: 64
+    iterations: 3
+    elite: 8
+    tracking_weight: 1.0
+    variance_weight: 0.2
+    slew_weight: 0.01
+    energy_weight: 0.0001
+    temperature_scale_K: 100.0
+    power_scale_W: 2000.0
+    energy_scale_J: 240000.0
+  runtime_deadline_s: 0.5
+  runtime_seed: 101
+  scenarios:
+    - {scenario_id: N01, seed: 9101, category: nominal, rho_scale: 0.98, cp_scale: 1.02, k_scale: 0.94}
+    - {scenario_id: N02, seed: 9102, category: nominal, rho_scale: 1.03, cp_scale: 0.97, k_scale: 1.07}
+    - {scenario_id: N03, seed: 9103, category: nominal, rho_scale: 1.00, cp_scale: 1.00, k_scale: 1.00}
+    - {scenario_id: N04, seed: 9104, category: nominal, rho_scale: 0.96, cp_scale: 1.04, k_scale: 0.91}
+    - {scenario_id: N05, seed: 9105, category: nominal, rho_scale: 1.04, cp_scale: 0.96, k_scale: 1.09}
+    - {scenario_id: N06, seed: 9106, category: nominal, rho_scale: 1.01, cp_scale: 1.03, k_scale: 0.96}
+    - {scenario_id: S01, seed: 9201, category: parameter_shift, rho_scale: 0.84, cp_scale: 1.15, k_scale: 0.75}
+    - {scenario_id: S02, seed: 9202, category: parameter_shift, rho_scale: 1.17, cp_scale: 0.86, k_scale: 1.30}
+    - {scenario_id: S03, seed: 9203, category: parameter_shift, rho_scale: 0.85, cp_scale: 0.86, k_scale: 1.27}
+    - {scenario_id: S04, seed: 9204, category: parameter_shift, rho_scale: 1.16, cp_scale: 1.14, k_scale: 0.76}
+    - {scenario_id: F01, seed: 9301, category: sensor_stress, sensor_noise_K: 2.0, sensor_dropout: 0.10}
+    - {scenario_id: F02, seed: 9302, category: sensor_stress, sensor_noise_K: 2.0, sensor_dropout: 0.20}
+analysis:
+  paired_unit: scenario
+  training_seed_hierarchy: report seed variation separately; do not count time samples as independent
+  metrics: [rmse_K, mean_spatial_std_K, energy_J, solid_excess_Ks, zone_excess_Ks, fallback_rate, deadline_miss_rate, latency_p50_s, latency_p95_s, latency_p99_s, latency_max_s]
+  uncertainty: paired scenario bootstrap within category; report observed ranges if sample too small
+  comparison: same CEM for B1/B2/B3; SLSQP separate optimizer comparison
+  no_post_test_tuning: true

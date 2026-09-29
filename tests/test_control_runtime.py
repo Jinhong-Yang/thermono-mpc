@@ -1,5 +1,7 @@
 from dataclasses import replace
+import threading
 import numpy as np
+import pytest
 
 from thermono_mpc.process import ProcessConfig
 from thermono_mpc.controllers import CEMMPC, SLSQPMPC, MPCConfig, ROMPredictor, PIDController, limit_power
@@ -80,4 +82,47 @@ def test_supervisor_fallback_on_worker_error():
         assert applied.mode == "FALLBACK" and "WORKER_FAILED" in applied.reason
         assert np.all(applied.actual_power_W <= c.slew)
     finally:
+        sup.close()
+
+
+@pytest.mark.parametrize("mutation,reason", [
+    ({"protocol_version": 2}, "PROTOCOL_MISMATCH"),
+    ({"parameter_version": "after-restart"}, "PROCESS_VERSION_MISMATCH"),
+    ({"source_state_id": 9}, "SOURCE_MISMATCH"),
+    ({"expires_at_ns": 1_050_000_000}, "EXPIRED_COMMAND"),
+    ({"setpoints_W": np.full(3, 2500.)}, "POWER_BOUNDS"),
+])
+def test_more_command_faults(mutation, reason):
+    c, state = setup()
+    cmd = ControlCommand(1, 1, state.state_id, state.sample_time_ns,
+                         state.clock_domain_id, 1, 1_500_000_000,
+                         np.full(3, 200.), "rom-1", "synthetic-v1", 1)
+    validator = CommandValidator(c)
+    signed = SignedCommand.create(replace(cmd, **mutation))
+    assert validator.validate(signed, state, np.zeros(3), now_ns=1_100_000_000,
+                              finish_ns=1_100_000_000, current_cycle=0,
+                              expected_generation=1) == reason
+
+
+def test_late_worker_result_and_bounded_queue():
+    c, state = setup()
+    blocker = threading.Event()
+    sup = RuntimeSupervisor(c, RuntimePolicy(deadline_ns=1_000_000))
+    try:
+        old_generation = sup.submit(lambda: (blocker.wait(timeout=1.), np.full(3, 200.))[1])
+        assert sup.submit(lambda: np.zeros(3)) is None
+        applied = sup.select(state, np.zeros(3), 370., current_cycle=0,
+                             request_generation=old_generation,
+                             start_ns=state.sample_time_ns,
+                             now_ns=state.sample_time_ns + 2_000_000)
+        assert applied.mode == "FALLBACK" and applied.reason == "DEADLINE_OVERRUN"
+        blocker.set()
+        sup.inflight.result(timeout=1)
+        late = sup.select(state, np.zeros(3), 370., current_cycle=0,
+                          request_generation=old_generation,
+                          start_ns=state.sample_time_ns,
+                          now_ns=state.sample_time_ns + 3_000_000)
+        assert late.reason == "STALE_GENERATION"
+    finally:
+        blocker.set()
         sup.close()

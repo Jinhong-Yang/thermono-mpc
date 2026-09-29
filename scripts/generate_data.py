@@ -28,8 +28,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     c, d = read_experiment(args.config)
     counts = {"train": d["train_trajectories"],
-              "validation": d["validation_trajectories"],
-              "development": d["development_trajectories"]}
+              "validation": d["validation_trajectories"]}
+    for name in ("development", "calibration"):
+        key = name + "_trajectories"
+        if key in d:
+            counts[name] = d[key]
     path = generate_dataset(args.output, c, counts=counts,
                             steps=d["steps"], horizon=d["horizon"],
                             control_dt_s=d["control_dt_s"],

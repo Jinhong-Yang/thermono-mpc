@@ -50,6 +50,8 @@ class Prediction:
     def validate(self, batch: int, horizon: int, ny: int, nx: int, zones: int) -> None:
         finite_array(self.temperature_K, (batch, horizon, ny, nx), "temperature_K")
         finite_array(self.zone_temperature_K, (batch, horizon, zones), "zone_temperature_K")
+        if np.min(self.temperature_K) <= 0 or np.min(self.zone_temperature_K) <= 0:
+            raise ValueError("predicted kelvin temperature must be positive")
 
 
 @dataclass(frozen=True)
@@ -76,4 +78,3 @@ class AppliedCommand:
     mode: str
     reason: str
     applied_at_ns: int
-

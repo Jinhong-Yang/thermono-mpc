@@ -10,7 +10,6 @@ import numpy as np
 from .contracts import StateEstimate
 from .controllers import CEMMPC, SLSQPMPC, MPCConfig, PIDController, ROMPredictor, limit_power
 from .estimation import SparseObserver
-from .operator import DirectFNO, TorchPredictor, load_npz_weights
 from .process import ProcessConfig, ThermalPlant
 from .runtime import RuntimePolicy, RuntimeSupervisor
 
@@ -32,8 +31,9 @@ def reference_K(time_s: float, *, initial: float = 293.15,
     return initial + (target - initial) * min(max(time_s / ramp_s, 0.), 1.)
 
 
-def make_predictor(config: ProcessConfig, model_metadata: Path, device: str) -> TorchPredictor:
+def make_predictor(config: ProcessConfig, model_metadata: Path, device: str):
     import json
+    from .operator import DirectFNO, TorchPredictor, load_npz_weights
     metadata = json.loads(model_metadata.read_text(encoding="utf-8"))
     arch = metadata["architecture"]
     if arch["zones"] != config.zones:
@@ -49,7 +49,8 @@ def run_episode(config: ProcessConfig, scenario: Scenario, controller_name: str,
                 horizon: int = 4, target_K: float = 340., ramp_s: float = 600.,
                 observation: str = "partial", checkpoint: Path | None = None,
                 device: str = "cpu", mpc_settings: MPCConfig | None = None,
-                deadline_s: float = .5) -> tuple[dict, list[dict]]:
+                deadline_s: float = .5,
+                pid_gains: tuple[float, float] = (15., .01)) -> tuple[dict, list[dict]]:
     if observation not in ("partial", "full"):
         raise ValueError("invalid observation mode")
     actual = replace(config, rho=config.rho * scenario.rho_scale,
@@ -58,7 +59,7 @@ def run_episode(config: ProcessConfig, scenario: Scenario, controller_name: str,
     state = plant.reset()
     observer = SparseObserver(config)
     rom = ROMPredictor(config)
-    pid = PIDController(config)
+    pid = PIDController(config, kp=pid_gains[0], ki=pid_gains[1])
     settings = mpc_settings or MPCConfig(horizon=horizon, blocks=min(2, horizon),
                                          candidates=32, iterations=2, elite=4)
     if settings.horizon != horizon:
@@ -75,7 +76,8 @@ def run_episode(config: ProcessConfig, scenario: Scenario, controller_name: str,
         mpc = CEMMPC(config, make_predictor(config, checkpoint, device), settings, scenario.seed)
     else:
         raise ValueError("unknown controller")
-    supervisor = RuntimeSupervisor(config, RuntimePolicy(deadline_ns=int(deadline_s * 1e9)), PIDController(config)) if controller_name == "B4_PINO_RUNTIME" else None
+    supervisor = RuntimeSupervisor(config, RuntimePolicy(deadline_ns=int(deadline_s * 1e9)),
+                                   PIDController(config, kp=pid_gains[0], ki=pid_gains[1])) if controller_name == "B4_PINO_RUNTIME" else None
     rng = np.random.default_rng(scenario.seed)
     held_W = np.zeros(config.zones)
     rows = []
@@ -96,14 +98,22 @@ def run_episode(config: ProcessConfig, scenario: Scenario, controller_name: str,
             # controller sees the same ROM projection through the held input.
             projected = rom.predict(estimate.field_K, estimate.zones_K,
                                     held_W[None, None, :], dt_s)
-            projected_field = projected.temperature_K[0, 0]
+            # Preserve spatial deviations in the shared state estimate; add
+            # only the ROM's predicted change over the held-input interval.
+            zonal_mean = np.array([estimate.field_K[rom.mask == i].mean()
+                                   for i in range(config.zones)])
+            projected_field = estimate.field_K + projected.temperature_K[0, 0] - zonal_mean[rom.mask]
             projected_zone = projected.zone_temperature_K[0, 0]
             ref = np.array([reference_K((cycle + j + 2) * dt_s,
                                         initial=config.initial, target=target_K,
                                         ramp_s=ramp_s) for j in range(horizon)])
             reason = "OK"
             mode = "CANDIDATE"
-            if mpc is None:
+            if not estimate.valid:
+                proposed = pid.propose(projected_field, ref[0], held_W, dt_s)
+                reason = "NO_VALID_PROBES"
+                mode = "FALLBACK"
+            elif mpc is None:
                 proposed = pid.propose(projected_field, ref[0], held_W, dt_s)
             elif supervisor is None:
                 result = mpc.optimize(projected_field, projected_zone, ref, held_W, dt_s)
