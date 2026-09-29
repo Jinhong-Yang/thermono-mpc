@@ -19,6 +19,11 @@ def finite_volume_residual(field_K: torch.Tensor, zone_K: torch.Tensor,
     b, h, ny, nx = field_K.shape
     if (ny, nx) != (c.ny, c.nx) or zone_K.shape != (b, h, c.zones):
         raise ValueError("physics residual shape mismatch")
+    if zone_K.dtype != field_K.dtype:
+        raise ValueError("predicted field and zones must have the same dtype")
+    initial_field_K = initial_field_K.to(device=field_K.device, dtype=field_K.dtype)
+    initial_zone_K = initial_zone_K.to(device=field_K.device, dtype=field_K.dtype)
+    power_W = power_W.to(device=field_K.device, dtype=field_K.dtype)
     prev_field = torch.cat([initial_field_K[:, None], field_K[:, :-1]], dim=1)
     prev_zone = torch.cat([initial_zone_K[:, None], zone_K[:, :-1]], dim=1)
     rhs = torch.zeros_like(field_K)

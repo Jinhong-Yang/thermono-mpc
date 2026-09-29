@@ -31,3 +31,16 @@ def test_physics_residual_of_generated_label_is_small(tmp_path):
     assert torch.isfinite(f).all() and torch.isfinite(z).all()
     # Labels use slightly varied material; nominal residual is not exactly zero.
     assert float(f.square().mean() + z.square().mean()) < 1e-4
+
+
+def test_residual_accepts_float64_initial_state_with_float32_predictions(tmp_path):
+    c = ProcessConfig(nx=6, ny=6)
+    manifest = generate_dataset(tmp_path, c, counts={"train": 1},
+                                steps=3, horizon=2, control_dt_s=1., max_step_s=1.)
+    data = load_windows(manifest, "train")
+    f, z = finite_volume_residual(
+        torch.tensor(data["target_field"]), torch.tensor(data["target_zone"]),
+        torch.tensor(data["field"], dtype=torch.float64),
+        torch.tensor(data["zone"], dtype=torch.float64),
+        torch.tensor(data["power"], dtype=torch.float64), 1., c)
+    assert f.dtype == z.dtype == torch.float32
