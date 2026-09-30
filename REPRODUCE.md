@@ -69,4 +69,6 @@ python scripts/analyze_results.py --control-dir PATH_OUTSIDE_CHECKOUT/control --
 python scripts/render_paper_assets.py --analysis-dir PATH_OUTSIDE_CHECKOUT/analysis --output PATH_OUTSIDE_CHECKOUT/figures
 ```
 
+The figure command writes three vector PDFs, matching PNGs, and `figure_data.json`. The JSON records every plotted control difference, trajectory-level prediction mean, confidence interval, and input hash. Horizontal offsets in the forecast figure separate overlapping marks; they do not alter error values. Figure typography is sized for a manuscript text width of approximately 6 inches.
+
 The frozen comparison contains 12 scenarios and 120 controller/seed combinations. `analysis_status.json` must report 120 successes, zero failures, 728 prediction windows and eight held-out prediction trajectories. Scenario or trajectory is the resampling unit; overlapping windows and time cycles are not independent replications. The tested RTX 5080 timing is host-specific. For method definitions, exclusions and the negative FNO/PINO result, see `docs/benchmark_protocol.md` and `docs/limitations.md`.
