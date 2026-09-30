@@ -1,0 +1,8 @@
+package,role,tested_version,observed_license,evidence
+NumPy,runtime,2.4.6,BSD-3-Clause and bundled permissive notices,installed distribution metadata and LICENSE.txt
+SciPy,runtime,1.17.1,BSD license classifier,installed distribution metadata and LICENSE.txt
+PyYAML,runtime,6.0.3,MIT,installed distribution metadata and LICENSE
+PyTorch,optional neural model,2.13.0+cu130,Apache-2.0 and bundled permissive notices,installed distribution metadata and licenses directory
+Hatchling,build,1.32.4,MIT,installed distribution metadata and LICENSE.txt
+pytest,development,unlocked,not audited for redistribution,not bundled
+build,development,unlocked,not audited for redistribution,not bundled

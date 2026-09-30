@@ -30,6 +30,6 @@ current boundary is software-only and shares one host clock; it provides no
 hardware isolation, process preemption, or hard real-time guarantee.
 
 The controller-to-actuator object contains only heater setpoints and metadata,
-not a full thermal field. A later simulation interface must explicitly model
-one-cycle application delay, including the previously held input, before a
-closed-loop result is interpreted.
+not a full thermal field. `simulation.run_episode` explicitly models one-cycle
+application delay by applying the previously held input during the current
+interval and selecting a validated command for the next interval.

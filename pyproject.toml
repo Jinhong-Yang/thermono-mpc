@@ -13,7 +13,8 @@ classifiers = ["Programming Language :: Python :: 3", "Operating System :: OS In
 
 [project.optional-dependencies]
 torch = ["torch>=2.7"]
-dev = ["pytest>=8", "build>=1"]
+dev = ["pytest>=8", "build>=1", "torch>=2.7"]
+paper = ["matplotlib>=3.9"]
 
 [project.scripts]
 thermono-mpc = "thermono_mpc.cli:main"
@@ -23,4 +24,3 @@ packages = ["src/thermono_mpc"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-
