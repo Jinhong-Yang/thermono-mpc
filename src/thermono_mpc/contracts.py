@@ -30,6 +30,34 @@ class StateEstimate:
 
 
 @dataclass(frozen=True)
+class ControlObservation:
+    """Compact observation sent to a separate command-selection process."""
+
+    zone_mean_K: np.ndarray
+    sample_time_ns: int
+    state_id: int
+    clock_domain_id: str
+    parameter_version: str
+    valid: bool = True
+
+    @classmethod
+    def from_estimate(cls, estimate: StateEstimate, zones: int) -> ControlObservation:
+        field = np.asarray(estimate.field_K)
+        if field.ndim != 2 or zones < 1 or field.shape[1] < zones:
+            raise ValueError("field width must cover all zones")
+        xzones = np.minimum((np.arange(field.shape[1]) + .5) * zones / field.shape[1], zones - 1).astype(int)
+        means = np.array([field[:, xzones == i].mean() for i in range(zones)])
+        return cls(means, estimate.sample_time_ns, estimate.state_id,
+                   estimate.clock_domain_id, estimate.parameter_version, estimate.valid)
+
+    def validate(self, ny: int, nx: int, zones: int) -> None:
+        del ny, nx
+        finite_array(self.zone_mean_K, (zones,), "zone_mean_K")
+        if self.sample_time_ns < 0 or self.state_id < 0 or not self.clock_domain_id or not self.parameter_version:
+            raise ValueError("invalid observation metadata")
+
+
+@dataclass(frozen=True)
 class ControlPlan:
     power_W: np.ndarray  # [H, n_zones]
     dt_s: float

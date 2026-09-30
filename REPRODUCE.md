@@ -13,9 +13,11 @@ thermono-mpc doctor
 thermono-mpc demo --profile cpu-smoke
 python examples/cpu_quickstart.py
 python examples/reuse_second_case.py
+python examples/process_boundary_demo.py
+python scripts/runtime_overload_probe.py
 ```
 
-The executable demo is deliberately small. Its output is a smoke result, not one of the paper's 12 scenarios. The four-zone example reuses the plant and physical controllers; three-zone neural weights require retraining before they can be applied to four zones.
+The executable demo is deliberately small. Its output is a smoke result, not one of the paper's 12 scenarios. The four-zone example reuses the plant and physical controllers; three-zone neural weights require retraining before they can be applied to four zones. The separate-process example confirms local IPC and command selection, while the overload probe runs actual CPU work rather than sleeping. Neither replaces or re-scores the frozen single-worker control runs.
 
 ## 2. Saved-model closed loop
 

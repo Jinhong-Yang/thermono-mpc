@@ -33,3 +33,24 @@ The controller-to-actuator object contains only heater setpoints and metadata,
 not a full thermal field. `simulation.run_episode` explicitly models one-cycle
 application delay by applying the previously held input during the current
 interval and selecting a validated command for the next interval.
+
+`process_boundary.ProcessCommandBoundary` is an optional local-process
+transport example. The prediction side reduces a causal field estimate to one
+temperature mean per heating zone. The child command-selector process receives
+those means, state metadata and a signed setpoint command through a single
+request/response pipe. It applies the same validator and uses its own compact
+PID fallback for rejected or missing commands. Only one request is outstanding;
+if the child dies or fails to respond, the caller records an emergency fallback
+and closes that boundary. The example waits for child startup before sampling
+the state so cold-start time is not hidden inside a decision deadline.
+After a process restart, the caller must advance the process version or another
+trusted generation identifier; otherwise a fresh validator cannot know all
+commands accepted by the old process. The fault tests reject a pre-restart
+command under an advanced process version.
+
+The 120 frozen closed-loop runs used the original single-worker thread path,
+not this process transport. The process example has its own CPU smoke and fault
+tests; it is not a measured PLC transport or a safety-isolated control core.
+`scripts/runtime_overload_probe.py` separately measures CPU contention against
+a software deadline and records queue rejection, without treating a timed-out
+worker as preempted.

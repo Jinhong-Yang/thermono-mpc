@@ -16,9 +16,11 @@ thermono-mpc doctor
 thermono-mpc demo --profile cpu-smoke
 python examples/cpu_quickstart.py
 python examples/reuse_second_case.py
+python examples/process_boundary_demo.py
+python scripts/runtime_overload_probe.py
 ```
 
-The CPU example uses a small grid and runs without PyTorch. `reuse_second_case.py` changes geometry, material and the number of heater zones while reusing the same plant and controller APIs; a three-zone FNO checkpoint is not transferable to that four-zone example without retraining.
+The CPU examples run without PyTorch. `reuse_second_case.py` changes geometry, material and the number of heater zones while reusing the same plant and controller APIs; a three-zone FNO checkpoint is not transferable to that four-zone example without retraining. `process_boundary_demo.py` starts a separate local command-selection process and sends only compact zone means and command metadata across its IPC transport. `runtime_overload_probe.py` measures CPU contention and verifies that a late candidate is rejected while a second queued job is refused. These are software demonstrations separate from the frozen performance results.
 
 ## Model path
 
@@ -35,7 +37,7 @@ The benchmark scores a 32×32 synthetic plant with nominal, material-shift and s
 ## Package map
 
 - `src/thermono_mpc/process.py`: synthetic thermal plant and conservative finite-volume solver.
-- `contracts.py`, `runtime.py`: state/prediction/command contracts, validation, single-worker supervision and independent fallback.
+- `contracts.py`, `runtime.py`, `process_boundary.py`: state/prediction/command contracts, validation, single-worker supervision, optional local process transport and independent fallback.
 - `operator.py`, `physics_loss.py`: direct-horizon FNO, safe checkpoint loader and differentiable residual.
 - `controllers.py`, `estimation.py`: PID, physical ROM, CEM/SLSQP and sparse observer.
 - `dataset.py`, `simulation.py`: whole-trajectory generation and delayed-command closed-loop evaluation.

@@ -5,7 +5,7 @@ import pytest
 
 from thermono_mpc.process import ProcessConfig
 from thermono_mpc.controllers import CEMMPC, SLSQPMPC, MPCConfig, ROMPredictor, PIDController, limit_power
-from thermono_mpc.contracts import ControlCommand, StateEstimate
+from thermono_mpc.contracts import ControlCommand, Prediction, StateEstimate
 from thermono_mpc.runtime import CommandValidator, RuntimePolicy, SignedCommand, RuntimeSupervisor
 
 
@@ -46,8 +46,17 @@ def test_command_validation_faults():
     assert check() == "ACCEPTED"
     assert check(replace(cmd, units="kW")) == "UNITS_MISMATCH"
     assert check(replace(cmd, clock_domain_id="utc")) == "CLOCK_DOMAIN_MISMATCH"
+    assert check(replace(cmd, model_version="")) == "MODEL_VERSION_MISMATCH"
+    restricted = CommandValidator(c, RuntimePolicy(allowed_model_versions=("approved-v1",)))
+    assert restricted.validate(SignedCommand.create(cmd), state, np.zeros(3),
+                               now_ns=1_100_000_000, finish_ns=1_100_000_000,
+                               current_cycle=0, expected_generation=1) == "MODEL_VERSION_MISMATCH"
     invalid = replace(cmd, setpoints_W=np.array([np.nan, 0., 0.]))
     assert CommandValidator(c, policy).validate(SignedCommand(invalid, "invalid"), state, np.zeros(3),
+                now_ns=1_100_000_000, finish_ns=1_100_000_000,
+                current_cycle=0, expected_generation=1) == "INVALID_SHAPE_OR_NONFINITE"
+    infinite = replace(cmd, setpoints_W=np.array([np.inf, 0., 0.]))
+    assert CommandValidator(c, policy).validate(SignedCommand(infinite, "invalid"), state, np.zeros(3),
                 now_ns=1_100_000_000, finish_ns=1_100_000_000,
                 current_cycle=0, expected_generation=1) == "INVALID_SHAPE_OR_NONFINITE"
     assert check(replace(cmd, setpoints_W=np.full(3, 500.))) == "SLEW_BOUNDS"
@@ -61,6 +70,10 @@ def test_command_validation_faults():
                       current_cycle=0, expected_generation=1) == "OUT_OF_ORDER_OR_DUPLICATE"
     v2 = CommandValidator(c)
     assert v2.validate(signed, state, np.zeros(3), now_ns=1_100_000_000, finish_ns=1_600_000_000,
+                       current_cycle=0, expected_generation=1) == "DEADLINE_OVERRUN"
+    v3 = CommandValidator(c)
+    later_expiry = SignedCommand.create(replace(cmd, expires_at_ns=2_000_000_000))
+    assert v3.validate(later_expiry, state, np.zeros(3), now_ns=1_600_000_000, finish_ns=1_100_000_000,
                        current_cycle=0, expected_generation=1) == "DEADLINE_OVERRUN"
 
 
@@ -188,3 +201,21 @@ def test_corrupted_warm_start_cannot_break_cem_actuator_bounds():
     assert np.all(result.sequence_W <= np.asarray(c.pmax))
     assert np.all(np.abs(np.diff(np.vstack([np.zeros(c.zones), result.sequence_W]),
                                  axis=0)) <= np.asarray(c.slew) + 1e-9)
+
+
+def test_all_thermally_infeasible_candidates_are_reported():
+    c, state = setup()
+
+    class AlwaysHotPredictor:
+        def predict(self, field_K, zones_K, candidates_W, dt_s):
+            batch, horizon, _ = candidates_W.shape
+            return Prediction(np.full((batch, horizon, c.ny, c.nx), c.solid_limit + 1.),
+                              np.full((batch, horizon, c.zones), c.zone_limit + 1.),
+                              "infeasibility-fixture")
+
+    mpc = CEMMPC(c, AlwaysHotPredictor(),
+                 MPCConfig(horizon=4, blocks=2, candidates=8, iterations=2, elite=2), seed=2)
+    result = mpc.optimize(state.field_K, state.zones_K, np.full(4, 370.),
+                          np.zeros(c.zones), 10.)
+    assert result.status == "INFEASIBLE_CANDIDATES"
+    assert result.feasible_count == 0

@@ -9,7 +9,7 @@ import time
 from typing import Callable
 import numpy as np
 
-from .contracts import AppliedCommand, ControlCommand, StateEstimate
+from .contracts import AppliedCommand, ControlCommand, ControlObservation, StateEstimate
 from .controllers import PIDController, limit_power
 from .process import ProcessConfig
 
@@ -37,6 +37,7 @@ class RuntimePolicy:
     max_state_age_ns: int = 10_000_000_000
     deadline_ns: int = 500_000_000
     process_version: str = "synthetic-v1"
+    allowed_model_versions: tuple[str, ...] = ()
 
 
 class CommandValidator:
@@ -46,7 +47,7 @@ class CommandValidator:
         self.last_sequence = -1
         self.last_cycle = -1
 
-    def validate(self, signed: SignedCommand, state: StateEstimate,
+    def validate(self, signed: SignedCommand, state: StateEstimate | ControlObservation,
                  previous_W: np.ndarray, *, now_ns: int, current_cycle: int,
                  expected_generation: int, finish_ns: int) -> str:
         p, c, cmd = self.policy, self.config, signed.command
@@ -69,6 +70,8 @@ class CommandValidator:
             return "UNITS_MISMATCH"
         if cmd.parameter_version != p.process_version or state.parameter_version != p.process_version:
             return "PROCESS_VERSION_MISMATCH"
+        if not cmd.model_version or (p.allowed_model_versions and cmd.model_version not in p.allowed_model_versions):
+            return "MODEL_VERSION_MISMATCH"
         if cmd.generation_id != expected_generation:
             return "STALE_GENERATION"
         if cmd.source_state_id != state.state_id or cmd.source_sample_time_ns != state.sample_time_ns:
@@ -81,7 +84,7 @@ class CommandValidator:
             return "APPLY_CYCLE_MISMATCH"
         if now_ns > cmd.expires_at_ns:
             return "EXPIRED_COMMAND"
-        if finish_ns > state.sample_time_ns + p.deadline_ns:
+        if max(finish_ns, now_ns) > state.sample_time_ns + p.deadline_ns:
             return "DEADLINE_OVERRUN"
         previous = np.asarray(previous_W, dtype=float)
         if setpoints.shape != (c.zones,) or previous.shape != (c.zones,) or not np.all(np.isfinite(setpoints)):
