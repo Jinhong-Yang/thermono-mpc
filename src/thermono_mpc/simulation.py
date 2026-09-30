@@ -50,7 +50,8 @@ def run_episode(config: ProcessConfig, scenario: Scenario, controller_name: str,
                 observation: str = "partial", checkpoint: Path | None = None,
                 device: str = "cpu", mpc_settings: MPCConfig | None = None,
                 deadline_s: float = .5,
-                pid_gains: tuple[float, float] = (15., .01)) -> tuple[dict, list[dict]]:
+                pid_gains: tuple[float, float] = (15., .01),
+                controller_transform=None, diagnostic_hook=None) -> tuple[dict, list[dict]]:
     if observation not in ("partial", "full"):
         raise ValueError("invalid observation mode")
     actual = replace(config, rho=config.rho * scenario.rho_scale,
@@ -76,6 +77,10 @@ def run_episode(config: ProcessConfig, scenario: Scenario, controller_name: str,
         mpc = CEMMPC(config, make_predictor(config, checkpoint, device), settings, scenario.seed)
     else:
         raise ValueError("unknown controller")
+    # Optional post-freeze instrumentation; neither option is used by the
+    # frozen evaluation. Diagnostic runtimes are not acceptance-time evidence.
+    if controller_transform is not None:
+        mpc = controller_transform(mpc)
     supervisor = RuntimeSupervisor(config, RuntimePolicy(deadline_ns=int(deadline_s * 1e9)),
                                    PIDController(config, kp=pid_gains[0], ki=pid_gains[1])) if controller_name == "B4_PINO_RUNTIME" else None
     rng = np.random.default_rng(scenario.seed)
@@ -83,6 +88,8 @@ def run_episode(config: ProcessConfig, scenario: Scenario, controller_name: str,
     rows = []
     try:
         for cycle in range(steps):
+            state_before = state.copy() if diagnostic_hook is not None else None
+            result = None
             start_ns = time.perf_counter_ns()
             packet = observer.observe(state.field, state.zones,
                                       sample_time_ns=start_ns, state_id=cycle,
@@ -175,6 +182,16 @@ def run_episode(config: ProcessConfig, scenario: Scenario, controller_name: str,
                          "mode": mode, "reason": reason,
                          "applied_power_W": held_applied.tolist(),
                          "selected_next_power_W": held_W.tolist()})
+            if diagnostic_hook is not None:
+                diagnostic_hook({"cycle": cycle, "actual_config": actual,
+                                 "state_before": state_before,
+                                 "state_after_held": state.copy(),
+                                 "estimate": estimate,
+                                 "projected_field_K": projected_field.copy(),
+                                 "projected_zone_K": projected_zone.copy(),
+                                 "held_power_W": held_applied.copy(),
+                                 "reference_K": ref.copy(), "result": result,
+                                 "controller": mpc, "row": rows[-1].copy()})
     finally:
         if supervisor is not None:
             supervisor.close()

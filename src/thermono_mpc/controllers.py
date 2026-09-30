@@ -118,12 +118,14 @@ class MPCResult:
 
 class CEMMPC:
     def __init__(self, config: ProcessConfig, predictor: Predictor,
-                 settings: MPCConfig = MPCConfig(), seed: int = 101):
+                 settings: MPCConfig = MPCConfig(), seed: int = 101,
+                 diagnostic_hook=None):
         self.process = config
         self.predictor = predictor
         self.settings = settings
         self.rng = np.random.default_rng(seed)
         self.warm: np.ndarray | None = None
+        self.diagnostic_hook = diagnostic_hook
         if settings.horizon < 1 or settings.blocks < 1 or settings.candidates < settings.elite or settings.iterations < 1:
             raise ValueError("invalid CEM settings")
 
@@ -151,7 +153,7 @@ class CEMMPC:
         best_cost = np.inf
         best_seq = None
         feasible_count = 0
-        for _ in range(s.iterations):
+        for iteration in range(s.iterations):
             draws = self.rng.normal(mean, std, (s.candidates, s.blocks, c.zones))
             draws[0] = np.broadcast_to(previous_W, mean.shape)
             seq = self._expand(draws, previous_W)
@@ -171,6 +173,11 @@ class CEMMPC:
             cost[~feasible] = np.inf
             order = np.argsort(cost)
             elite = order[np.isfinite(cost[order])][:s.elite]
+            if self.diagnostic_hook is not None:
+                self.diagnostic_hook({"iteration": iteration, "sequences_W": seq.copy(),
+                                      "cost": cost.copy(), "elite_indices": elite.copy(),
+                                      "iteration_best_field_K": field[elite[0]].copy() if len(elite) else None,
+                                      "iteration_best_zone_K": zone[elite[0]].copy() if len(elite) else None})
             if len(elite):
                 if cost[elite[0]] < best_cost:
                     best_cost = float(cost[elite[0]])

@@ -1,0 +1,18 @@
+schema: thermono-diagnostic-1
+id: D1
+status: POST_FREEZE_DIAGNOSTIC
+base_protocol: configs/frozen/protocol_v2.yaml
+base_protocol_sha256: 339859e89dcc0be653ec8a23c569137efaada298ac1a0cf556ae32a75c0fa8a8
+representative_scenarios: [N03, S01, F01]
+models: [ROM, data_only, physics_informed]
+model_seeds: [101, 202, 303]
+cycles: 90
+alignment: After the held command interval, apply the entire selected sequence to a cloned scoring plant; compare each horizon step to the prediction used for selection. Also predict from the true aligned initial state.
+record: [full_plan, selected_prediction, true_initial_prediction, same_plan_realization, estimated_state, projected_state, true_state, candidate_plans, elite_indices, predicted_cost]
+exploratory_branch_criteria:
+  unit: episode (cycles are correlated; no cycle-level significance tests)
+  a: Both neural families have positive horizon-end mean temperature bias above 1 K in at least 7 of 9 episodes and the overall absolute bias exceeds ROM. Interpret as evidence consistent with model-error exploitation, not proof of a unique cause.
+  b: Both neural families have horizon-end field RMSE at most 1 K in at least 7 of 9 episodes while closed-loop tracking remains worse than ROM. Stop narrative and publication; investigate controller, delay, and observer coupling.
+  c: All other outcomes, including disagreement between estimated-state and truth-start comparisons. Report mixed results for author review.
+criteria_note: Thresholds chosen prospectively for this diagnostic; not confirmatory tests or frozen-protocol criteria.
+replay_comparison: Report maximum absolute differences in mean field, per-cycle RMSE, applied powers, selected powers; no new latency claims from instrumented runs.
