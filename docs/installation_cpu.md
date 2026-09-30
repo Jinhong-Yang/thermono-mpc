@@ -10,7 +10,7 @@ python -m venv .venv
 python -m pip install --upgrade pip
 python -m pip install -e .
 thermono-mpc doctor
-thermono-mpc demo
+thermono-mpc demo --profile cpu-smoke
 python examples/cpu_quickstart.py
 python examples/reuse_second_case.py
 ```

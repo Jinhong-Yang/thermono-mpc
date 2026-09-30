@@ -13,7 +13,7 @@ python -m venv .venv
 # Activate the environment for your shell.
 python -m pip install -e .
 thermono-mpc doctor
-thermono-mpc demo
+thermono-mpc demo --profile cpu-smoke
 python examples/cpu_quickstart.py
 python examples/reuse_second_case.py
 ```
@@ -28,7 +28,7 @@ The model takes an estimated current temperature field, measured zone temperatur
 
 ## Reproduce the frozen benchmark
 
-Read `docs/benchmark_protocol.md` and the release data/weights manifest before a full run. The exact test source is the frozen commit recorded in the v2 freeze receipt; a later release commit may add documentation while keeping the numerical code unchanged. Generate the 36 synthetic whole-trajectory data files from the frozen configuration; verify their manifest hash; train the six declared seed/variant combinations or download the versioned checkpoint archive; run held-out prediction and all 120 planned closed-loop episodes. The analysis script aggregates at whole-trajectory or whole-scenario grain and reports failures separately. Do not infer statistical replication from overlapping windows or control cycles.
+Follow `REPRODUCE.md` for the CPU smoke, saved-model example and full frozen run; read `docs/benchmark_protocol.md` and the research-data manifest before a full run. The exact test source is the frozen commit recorded in the v2 freeze receipt; a later release commit adds documentation and a CPU CLI profile while retaining the evaluated numerical process, controller and model code. Generate the 36 synthetic whole-trajectory data files from the frozen configuration; verify their manifest hash; train the six declared seed/variant combinations or obtain the versioned checkpoint archive; run held-out prediction and all 120 planned closed-loop episodes. The analysis script aggregates at whole-trajectory or whole-scenario grain and reports failures separately. Do not infer statistical replication from overlapping windows or control cycles.
 
 The benchmark scores a 32×32 synthetic plant with nominal, material-shift and sensor-stress scenarios, sparse observations and a one-cycle command delay. PID, reduced-order CEM, reduced-order SLSQP, data-only FNO–CEM, PINO–CEM and deadline-aware PINO runtime runs receive the same declared conditions. SLSQP is a separate optimizer comparison; the matched predictor comparison uses CEM. Full-state oracle prediction results are labelled separately from partial-observation control results.
 
@@ -39,7 +39,7 @@ The benchmark scores a 32×32 synthetic plant with nominal, material-shift and s
 - `operator.py`, `physics_loss.py`: direct-horizon FNO, safe checkpoint loader and differentiable residual.
 - `controllers.py`, `estimation.py`: PID, physical ROM, CEM/SLSQP and sparse observer.
 - `dataset.py`, `simulation.py`: whole-trajectory generation and delayed-command closed-loop evaluation.
-- `configs/frozen`, `scripts`, `tests`, `docs`, `examples`: protocol, reproducibility commands, checks and user guidance.
+- `configs/frozen`, `scripts`, `tests`, `docs`, `examples`, `REPRODUCE.md`: protocol, reproducibility commands, checks and user guidance.
 
 ## Scope and limitations
 
