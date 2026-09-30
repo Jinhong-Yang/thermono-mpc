@@ -5,5 +5,5 @@
 - The study uses 32×32 scoring grids, a single reference ramp, a single CEM budget and one Windows RTX 5080 host. The sensor-stress category has only two scenarios, so no interval is reported for it alone.
 - Full-state oracle forecast results and partially observed closed-loop results have different information conditions. They are reported separately.
 - Runtime checks validate version, clock domain, state age, sequence, deadlines, units and power/slew constraints. A timed-out GPU call can continue in the background; there is no hard-real-time or safety certification.
-- The optional process-selector demonstration uses a local Python pipe, not a real controller transport. Its child-process startup is completed before sampling, and its tests do not establish worst-case communication latency. Frozen performance measurements used the original thread path.
+- The optional process-selector demonstration uses a local Python pipe, not a real controller transport. Its child-process startup is completed before sampling, and its tests do not establish worst-case communication latency. The frozen B4 comparator used the asynchronous thread runtime; other comparators used synchronous selection. None used the process transport.
 - No physical plant, PLC, industrial sensor, Jetson, NPU or other edge platform was tested. The examples must not control live equipment.

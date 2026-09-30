@@ -15,6 +15,8 @@ authors:
     email: jinhong@inje.ac.kr
 repository-code: "https://github.com/Jinhong-Yang/thermono-mpc"
 version: 0.1.0
+doi: 10.5281/zenodo.23051699
+date-released: 2026-09-30
 license: Apache-2.0
 keywords:
   - thermal process control

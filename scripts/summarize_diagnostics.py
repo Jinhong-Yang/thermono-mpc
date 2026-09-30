@@ -7,7 +7,7 @@ from diagnostics import write_csv,write_json
 def coverage_summary(values,lo,hi):
     a=np.asarray(values)
     return {'n':int(a.size),'mean':float(a.mean()),'min':float(a.min()),'max':float(a.max()),
-            'training_min':float(lo),'training_max':float(hi),'outside_training_range_fraction':float(np.mean((a<lo)|(a>hi)))}
+            'training_min':float(lo),'training_max':float(hi),'outside_training_range_fraction':float(np.mean((a<lo-1e-8)|(a>hi+1e-8)))}
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--root',type=Path,required=True)
@@ -49,7 +49,9 @@ def main():
             for zone in range(a.shape[1]):
                 rows.append({'run_id':run,'population':name,'metric':metric,'zone':zone,**coverage_summary(a[:,zone],b[:,zone].min(),b[:,zone].max())})
                 bins=np.linspace(0,2000,21) if metric=='power_W' else np.linspace(-400,400,17)
-                counts,edges=np.histogram(a[:,zone],bins=bins)
+                assert a[:,zone].min()>=bins[0]-1e-8 and a[:,zone].max()<=bins[-1]+1e-8
+                counts,edges=np.histogram(np.clip(a[:,zone],bins[0],bins[-1]),bins=bins)
+                assert counts.sum()==len(a)
                 hist.extend({'run_id':run,'population':name,'metric':metric,'zone':zone,'left':float(edges[i]),'right':float(edges[i+1]),'count':int(n)} for i,n in enumerate(counts))
         rows.append({'run_id':run,'population':name,'metric':'plan_energy_J','zone':'all',**coverage_summary(energy,te.min(),te.max())})
         counts,edges=np.histogram(energy,bins=np.linspace(0,720000,25))
@@ -67,7 +69,7 @@ def main():
                     collected[name]['power'].append(a.reshape(-1,3));collected[name]['slew'].append(slew.reshape(-1,3));collected[name]['energy'].append(a.sum(axis=(1,2))*10)
         for name,a in collected.items():add(name,run,np.vstack(a['power']),np.vstack(a['slew']),np.concatenate(a['energy']))
     out=args.root/'D2';write_csv(out/'coverage.csv',rows);write_csv(out/'histograms.csv',hist);write_csv(out/'energy_histograms.csv',energyhist)
-    write_json(out/'complete.json',{'d1_episodes':len(episodes),'training_trajectories':24,'scope':'descriptive coverage; correlated candidate occurrences, not independent samples','rows':len(rows)})
+    write_json(out/'complete.json',{'d1_episodes':len(episodes),'training_trajectories':24,'scope':'descriptive coverage; correlated candidate occurrences, not independent samples','floating_point_range_tolerance':1e-8,'rows':len(rows)})
     print(json.dumps({'D1_branch':branch,'families':groups,'D2_rows':len(rows)},indent=2))
 
 if __name__=='__main__':main()

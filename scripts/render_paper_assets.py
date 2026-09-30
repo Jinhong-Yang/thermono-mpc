@@ -43,15 +43,19 @@ def arrow(ax, start, end, color=GREY, style="-"):
                     "linestyle": style, "shrinkA": 0, "shrinkB": 0})
 
 def architecture(output):
-    fig, ax = plt.subplots(figsize=(6.5, 3.15))
+    # Match the approximately five-inch elsarticle text column so labels
+    # retain their intended point size when included at linewidth.
+    fig, ax = plt.subplots(figsize=(5.0, 3.15))
     fig.subplots_adjust(0, 0, 1, 1)
     ax.set(xlim=(0, 6.5), ylim=(0, 3.15))
     ax.axis("off")
-    for x, label in ((.12, "Thermal\nplant"), (1.75, "Sparse probes\n+ observer"),
-                     (3.38, "MPC / PID\ncontroller"), (5.01, "Command\nvalidator")):
+    # This panel depicts B4, the only scored comparator using the full
+    # asynchronous RuntimeSupervisor. Other comparator paths are synchronous.
+    for x, label in ((.12, "Thermal\nplant"), (1.75, "Probes +\nobserver"),
+                     (3.38, "PINO MPC\ncontroller"), (5.01, "Runtime\nvalidator")):
         box(ax, (x, 1.83), (1.32, .69), label)
     box(ax, (.12, .22), (1.32, .63), "Full-state\nscoring", GREY)
-    box(ax, (3.38, .22), (1.32, .63), "ROM / FNO /\nPINO predictor", BLUE)
+    box(ax, (3.38, .22), (1.32, .63), "PINO\npredictor", BLUE)
     box(ax, (5.01, .22), (1.32, .63), "PID\nfallback", ORANGE)
     for x in (1.44, 3.07, 4.70):
         arrow(ax, (x, 2.175), (x+.31, 2.175))
@@ -59,7 +63,7 @@ def architecture(output):
     ax.plot([6.33, 6.43, 6.43, .78, .78], [2.175, 2.175, 2.91, 2.91, 2.68],
             color=GREY, lw=1.1)
     arrow(ax, (.78, 2.68), (.78, 2.52))
-    ax.text(3.62, 3.00, "Applied power at the next control boundary", ha="center", fontsize=9.5)
+    ax.text(3.25, 3.00, "B4: power applied at the next control boundary", ha="center", fontsize=9.5)
     arrow(ax, (.78, 1.83), (.78, .85), style="--")
     ax.text(.90, 1.32, "truth", fontsize=9.2, color=GREY)
     ax.text(.78, .06, "Evaluation only", ha="center", fontsize=9.2, color=GREY)
@@ -85,7 +89,7 @@ def control_differences(analysis, output):
               for r in rows if r["metric"] == "rmse_K"}
     scenarios = [f"N{i:02d}" for i in range(1,7)] + [f"S{i:02d}" for i in range(1,5)] + ["F01","F02"]
     x = np.arange(len(scenarios))
-    fig, ax = plt.subplots(figsize=(6.5,3.35))
+    fig, ax = plt.subplots(figsize=(5.0,3.35))
     fig.subplots_adjust(left=.105,right=.985,bottom=.13,top=.83)
     plotted=[]
     for label, comparator, color, marker, offset in (
@@ -101,7 +105,7 @@ def control_differences(analysis, output):
     ax.set_xticks(x,scenarios)
     ax.set_yticks([0,5,10,15,20])
     ax.set(ylabel="PINO - comparator RMSE (K)",ylim=(-.8,21.6),xlim=(-.6,11.6))
-    for center,label in ((2.5,"Nominal"),(7.5,"Material shift"),(10.5,"Sensor stress")):
+    for center,label in ((2.5,"Nominal"),(7.5,"Material shift"),(10.5,"Sensor\nstress")):
         ax.text(center,20.6,label,ha="center",fontsize=9.2,color=GREY)
     ax.legend(frameon=False,loc="lower center",bbox_to_anchor=(.5,1.05),
               ncol=2,handletextpad=.45,columnspacing=1.1)
@@ -119,7 +123,7 @@ def prediction(analysis,output):
     colors=[GREY,BLUE,ORANGE]
     aggregate={r["variant"]:r for r in read(analysis/"prediction_aggregate.csv")
                if r["metric"]=="field_rmse_K"}
-    fig,ax=plt.subplots(figsize=(6.5,3.30))
+    fig,ax=plt.subplots(figsize=(5.0,3.30))
     fig.subplots_adjust(left=.105,right=.985,bottom=.14,top=.82)
     plotted=[]
     # Horizontal offsets separate nearly coincident marks without altering error values.

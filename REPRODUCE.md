@@ -13,11 +13,12 @@ thermono-mpc doctor
 thermono-mpc demo --profile cpu-smoke
 python examples/cpu_quickstart.py
 python examples/reuse_second_case.py
+python examples/custom_predictor.py
 python examples/process_boundary_demo.py
 python scripts/runtime_overload_probe.py
 ```
 
-The executable demo is deliberately small. Its output is a smoke result, not one of the paper's 12 scenarios. The four-zone example reuses the plant and physical controllers; three-zone neural weights require retraining before they can be applied to four zones. The separate-process example confirms local IPC and command selection, while the overload probe runs actual CPU work rather than sleeping. Neither replaces or re-scores the frozen single-worker control runs.
+The executable demo is deliberately small. Its output is a smoke result, not one of the paper's 12 scenarios. The four-zone example reuses the plant and physical controllers; three-zone neural weights require retraining before they can be applied to four zones. The separate-process example confirms local IPC and command selection, while the overload probe runs actual CPU work rather than sleeping. Neither replaces or re-scores the frozen control runs. Only the B4 comparator uses the full asynchronous single-worker runtime; other scored paths select synchronously.
 
 ## 2. Saved-model closed loop
 
@@ -28,7 +29,7 @@ python -m pip install -e ".[torch]"
 python examples/model_checkpoint.py --checkpoint PATH_TO_EXTRACTED_ARCHIVE/models/data_only_seed101.json --device cpu
 ```
 
-The script uses three short partially observed cycles and an eight-candidate CEM budget. It demonstrates loading and command flow; its score is not comparable to the frozen 90-cycle benchmark. The v2 research archive is currently a local draft pending release rights, so there is no valid public download URL yet.
+The script uses three short partially observed cycles and an eight-candidate CEM budget. It demonstrates loading and command flow; its score is not comparable to the frozen 90-cycle benchmark. Use the versioned research archive identified in the release metadata and verify its SHA-256 manifest before running the example.
 
 ## 3. Full data generation, training and frozen evaluation
 
@@ -60,15 +61,27 @@ python scripts/predict_eval.py --protocol configs/frozen/protocol_v2.yaml --free
 python scripts/evaluate.py --protocol configs/frozen/protocol_v2.yaml --freeze-receipt PATH_TO_EXTRACTED_ARCHIVE/provenance/freeze_receipt_v2.json --checkpoints PATH_TO_EXTRACTED_ARCHIVE/models --output PATH_OUTSIDE_CHECKOUT/control --device cuda --group all
 ```
 
-The analysis and figure scripts are in the later development/release candidate source, not the frozen evaluation commit. After the evaluation exits, switch back to the later source while retaining raw results outside the checkout:
+The analysis and figure scripts are in the later release source, not the frozen evaluation commit. After the evaluation exits, switch to the versioned release while retaining raw results outside the checkout:
 
 ```text
-git switch main
+git switch --detach v0.1.0
 python -m pip install -e ".[paper]"
 python scripts/analyze_results.py --control-dir PATH_OUTSIDE_CHECKOUT/control --prediction-csv PATH_OUTSIDE_CHECKOUT/prediction/prediction_windows.csv --output PATH_OUTSIDE_CHECKOUT/analysis
 python scripts/render_paper_assets.py --analysis-dir PATH_OUTSIDE_CHECKOUT/analysis --output PATH_OUTSIDE_CHECKOUT/figures
 ```
 
-The figure command writes three vector PDFs, matching PNGs, and `figure_data.json`. The JSON records every plotted control difference, trajectory-level prediction mean, confidence interval, and input hash. Horizontal offsets in the forecast figure separate overlapping marks; they do not alter error values. Figure typography is sized for a manuscript text width of approximately 6 inches.
+The figure command writes three vector PDFs, matching PNGs, and `figure_data.json`. The JSON records every plotted control difference, trajectory-level prediction mean, confidence interval, and input hash. Horizontal offsets in the forecast figure separate overlapping marks; they do not alter error values. Figure typography is sized for a manuscript text width of approximately 5 inches. The architecture panel depicts the B4 asynchronous runtime path specifically.
 
 The frozen comparison contains 12 scenarios and 120 controller/seed combinations. `analysis_status.json` must report 120 successes, zero failures, 728 prediction windows and eight held-out prediction trajectories. Scenario or trajectory is the resampling unit; overlapping windows and time cycles are not independent replications. The tested RTX 5080 timing is host-specific. For method definitions, exclusions and the negative FNO/PINO result, see `docs/benchmark_protocol.md` and `docs/limitations.md`.
+
+## 4. Post-freeze diagnostics and predictor extension
+
+Follow `docs/post_freeze_diagnostics.md` for D1-D8. Its staging helper verifies
+the public archive inputs and maps them to the paths used by the executed
+diagnostic scripts. New results belong in a separate output directory. The
+archive includes exact executed source snapshots and does not replace the
+original six checkpoints with D4's exploratory training runs.
+
+`docs/predictor_extension.md` documents all array dimensions, units, forecast
+alignment and retraining requirements. `examples/custom_predictor.py` is an
+executable CPU example of the public prediction contract and CEM integration.

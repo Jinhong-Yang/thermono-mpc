@@ -35,6 +35,14 @@ Follow `REPRODUCE.md` for the CPU smoke, saved-model example and full frozen run
 
 The benchmark scores a 32×32 synthetic plant with nominal, material-shift and sensor-stress scenarios, sparse observations and a one-cycle command delay. PID, reduced-order CEM, reduced-order SLSQP, data-only FNO–CEM, PINO–CEM and deadline-aware PINO runtime runs receive the same declared conditions. SLSQP is a separate optimizer comparison; the matched predictor comparison uses CEM. Full-state oracle prediction results are labelled separately from partial-observation control results.
 
+The supplementary [post-freeze diagnostics](docs/post_freeze_diagnostics.md)
+inspect selected plans, action coverage, grid transfer, residual weights,
+optimization budgets, numerical refinement and offline cost. Their outputs
+are separate from the frozen benchmark. See the
+[predictor extension guide](docs/predictor_extension.md) for a runnable custom
+predictor and the [related-software comparison](docs/related_software.md) for
+the package's documented scope.
+
 ## Package map
 
 - `src/thermono_mpc/process.py`: synthetic thermal plant and conservative finite-volume solver.
@@ -52,5 +60,12 @@ The field and zone dynamics are synthetic design assumptions. The front/back fac
 
 Apache-2.0 licensed software release (2026). Copyright 2026 JInhong Yang.
 See `LICENSE`, `NOTICE`, and `CITATION.cff`. Third-party dependencies retain
-their respective terms in `THIRD_PARTY_NOTICES.md`. Archived version links
-will be added after the release records are published and verified.
+their respective terms in `THIRD_PARTY_NOTICES.md`.
+
+Version-specific archive identifiers:
+
+- [Software v0.1.0](https://doi.org/10.5281/zenodo.23051699).
+- [Synthetic data, frozen checkpoints and post-freeze diagnostics](https://doi.org/10.5281/zenodo.23051736).
+
+The research deposit contains a SHA-256 inventory and `verify_archive.py`.
+It preserves frozen evidence and stores exploratory diagnostics separately.

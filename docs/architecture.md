@@ -7,12 +7,18 @@ checks nonlinear solver convergence. `dataset` generates whole trajectories
 and hashes each file in a split manifest.
 
 `operator.DirectFNO` accepts the estimated current field, measured zone
-temperatures, known material context, and an entire candidate future heater
+temperatures, nominal material context at inference, and an entire candidate future heater
 sequence. It returns all horizon field and zone predictions. It uses replicated
 padding to reduce periodic wraparound at the physical edge; padding alone does
 not guarantee an exact boundary condition. `physics_loss` computes a separate
 finite-volume residual on predicted states. Data-only and physics-informed
 variants share the same architecture and supervised labels.
+
+Training supplies each trajectory's sampled material channels. The public
+predictor wrapper supplies nominal material channels at inference, including
+material-shift evaluation scenarios. It executes directly at the input field
+grid; 32×32 evaluation does not downsample through the 16×16 training grid.
+The released neural weights are tied to a 12-step horizon at 10 s per step.
 
 `controllers.ROMPredictor` is a low-order spatial lump model, implemented
 without calling the evaluation plant. `controllers.CEMMPC` can use any
@@ -32,7 +38,12 @@ hardware isolation, process preemption, or hard real-time guarantee.
 The controller-to-actuator object contains only heater setpoints and metadata,
 not a full thermal field. `simulation.run_episode` explicitly models one-cycle
 application delay by applying the previously held input during the current
-interval and selecting a validated command for the next interval.
+interval and selecting a command for the next interval. All comparator paths
+clip power and slew and handle invalid observations or infeasible plans.
+Only `B4_PINO_RUNTIME` routes selection through the full asynchronous
+`RuntimeSupervisor` and timestamp/generation/deadline validator. The other
+scored comparators select synchronously; their elapsed selection times are
+measured but do not trigger the runtime deadline rejection path.
 
 `process_boundary.ProcessCommandBoundary` is an optional local-process
 transport example. The prediction side reduces a causal field estimate to one
@@ -48,8 +59,9 @@ trusted generation identifier; otherwise a fresh validator cannot know all
 commands accepted by the old process. The fault tests reject a pre-restart
 command under an advanced process version.
 
-The 120 frozen closed-loop runs used the original single-worker thread path,
-not this process transport. The process example has its own CPU smoke and fault
+Within the 120 frozen runs, B4 used the single-worker thread path and the
+remaining comparators used synchronous selection. None used this process
+transport. The process example has its own CPU smoke and fault
 tests; it is not a measured PLC transport or a safety-isolated control core.
 `scripts/runtime_overload_probe.py` separately measures CPU contention against
 a software deadline and records queue rejection, without treating a timed-out

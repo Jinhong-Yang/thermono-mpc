@@ -22,3 +22,14 @@ The confirmatory source commit is `7beaa86fc6e131a1f7a2cc36208d2811c4f0ca3b`. Th
 The paired unit is a whole scenario. Three neural-model seeds are averaged within each scenario and their range is kept separately. A paired scenario bootstrap is used for categories with at least four scenarios; two-scenario sensor-stress results retain their observed range without a confidence interval. Overlapping trajectory windows and control cycles are not independent replication units. Every planned run ID and failure is reported; a failed run has no invented numeric score and is counted separately from the successful-run summary. No parameter is retuned after test access.
 
 The frozen run completed all 120 planned closed-loop episodes and eight held-out prediction trajectories. The physics-informed operator did not improve tracking over the physical reduced-order comparator. Raw per-run records, aggregate CSV files and an integrity manifest belong with the versioned research-data deposit; release instructions must distinguish the frozen source commit from the later packaging commit, which also adds CLI and example entry points. Run `scripts/analyze_results.py` on the raw summaries and prediction-window CSV to regenerate scenario and trajectory aggregates. Run `scripts/render_paper_assets.py` on those aggregates to regenerate the paper figures.
+# Runtime scope
+
+The full asynchronous `RuntimeSupervisor` and command metadata validation are
+enabled for `B4_PINO_RUNTIME`. The other comparators run synchronously, with
+shared observation, actuator clipping, one-cycle delay and fallback for invalid
+observations or optimizer failure. They record latency but do not reject a
+command solely because its computation exceeded the runtime budget. For the
+frozen runs, the separate raw-latency audit found all measured decisions below
+the configured 0.5 s soft software deadline. Post-freeze budget experiments
+retain these synchronous comparator paths and do not constitute new runtime
+acceptance-time measurements.
