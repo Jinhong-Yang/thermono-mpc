@@ -4,10 +4,9 @@ This document has three entry paths. The quick CPU example needs only the source
 
 ## 1. Small CPU example
 
-With Python 3.11 or newer, from a checkout:
+With Python 3.11 or newer, run `python -m venv .venv` from a checkout. Activate that environment (PowerShell: `.\.venv\Scripts\Activate.ps1`; POSIX shell: `source .venv/bin/activate`) before the following commands:
 
 ```text
-python -m venv .venv
 python -m pip install -e .
 thermono-mpc --help
 thermono-mpc doctor
@@ -20,7 +19,7 @@ The executable demo is deliberately small. Its output is a smoke result, not one
 
 ## 2. Saved-model closed loop
 
-Install the PyTorch extra with a build appropriate for the host; see `docs/installation_cuda.md` for the tested GPU profile. Obtain a versioned model archive, verify its external SHA-256 against the release receipt, and extract it outside the checkout. The research-data archive has `models/data_only_seed101.json` next to `models/data_only_seed101.npz`, with four more seed/variant pairs. The example checks the checkpoint's internal weight SHA-256 and loads numeric arrays with pickling disabled.
+Install the PyTorch extra with a build appropriate for the host; see `docs/installation_cuda.md` for the tested GPU profile. Obtain a versioned model archive, verify its external SHA-256 against the release receipt, and extract it outside the checkout. The research-data archive has `models/data_only_seed101.json` next to `models/data_only_seed101.npz`, with five more seed/variant pairs. The example checks the checkpoint's internal weight SHA-256 and loads numeric arrays with pickling disabled.
 
 ```text
 python -m pip install -e ".[torch]"
@@ -31,7 +30,12 @@ The script uses three short partially observed cycles and an eight-candidate CEM
 
 ## 3. Full data generation, training and frozen evaluation
 
-The scored source is commit `7beaa86fc6e131a1f7a2cc36208d2811c4f0ca3b`. The exact protocol file `configs/frozen/protocol_v2.yaml` has SHA-256 `339859e89dcc0be653ec8a23c569137efaada298ac1a0cf556ae32a75c0fa8a8`; the 36-trajectory data manifest has SHA-256 `d7dd34e52775c71eca6645f6092b553f5ad9bfaf67a6a75e4d03ff9a90d3d5a1`. The research archive's `provenance/freeze_receipt_v2.json` records both and the test source commit. Work in a separate clean checkout at that commit; `predict_eval.py` and `evaluate.py` refuse another commit or a dirty tree. Keep extracted checkpoints and generated output outside the checkout.
+The scored source is commit `7beaa86fc6e131a1f7a2cc36208d2811c4f0ca3b`. The exact protocol file `configs/frozen/protocol_v2.yaml` has SHA-256 `339859e89dcc0be653ec8a23c569137efaada298ac1a0cf556ae32a75c0fa8a8`; the 36-trajectory data manifest has SHA-256 `d7dd34e52775c71eca6645f6092b553f5ad9bfaf67a6a75e4d03ff9a90d3d5a1`. The research archive's `provenance/freeze_receipt_v2.json` records both and the test source commit. Work in a separate clean Git checkout at that commit; `predict_eval.py` and `evaluate.py` refuse another commit or a dirty tree. Keep extracted checkpoints and generated output outside the checkout. Activate a Python environment and run:
+
+```text
+git switch --detach 7beaa86fc6e131a1f7a2cc36208d2811c4f0ca3b
+python -m pip install -e ".[torch]"
+```
 
 To regenerate the synthetic training data, run on the frozen checkout:
 
@@ -54,9 +58,11 @@ python scripts/predict_eval.py --protocol configs/frozen/protocol_v2.yaml --free
 python scripts/evaluate.py --protocol configs/frozen/protocol_v2.yaml --freeze-receipt PATH_TO_EXTRACTED_ARCHIVE/provenance/freeze_receipt_v2.json --checkpoints PATH_TO_EXTRACTED_ARCHIVE/models --output PATH_OUTSIDE_CHECKOUT/control --device cuda --group all
 ```
 
-The analysis and figure scripts are in the later development/release candidate source, not the frozen evaluation commit. After the evaluation exits, use those scripts without changing raw result files:
+The analysis and figure scripts are in the later development/release candidate source, not the frozen evaluation commit. After the evaluation exits, switch back to the later source while retaining raw results outside the checkout:
 
 ```text
+git switch main
+python -m pip install -e ".[paper]"
 python scripts/analyze_results.py --control-dir PATH_OUTSIDE_CHECKOUT/control --prediction-csv PATH_OUTSIDE_CHECKOUT/prediction/prediction_windows.csv --output PATH_OUTSIDE_CHECKOUT/analysis
 python scripts/render_paper_assets.py --analysis-dir PATH_OUTSIDE_CHECKOUT/analysis --output PATH_OUTSIDE_CHECKOUT/figures
 ```
