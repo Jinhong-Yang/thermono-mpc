@@ -7,6 +7,8 @@ name = "thermono-mpc"
 version = "0.1.0"
 description = "Synthetic multi-zone heat treatment control with neural operators and deadline-aware MPC"
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.11"
 dependencies = ["numpy>=2.0,<3", "scipy>=1.14,<2", "PyYAML>=6,<7"]
 classifiers = ["Programming Language :: Python :: 3", "Operating System :: OS Independent"]

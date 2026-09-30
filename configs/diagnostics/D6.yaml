@@ -1,0 +1,19 @@
+schema: thermono-diagnostic-1
+id: D6
+status: POST_FREEZE_DIAGNOSTIC
+base_protocol: configs/frozen/protocol_v2.yaml
+base_protocol_sha256: 339859e89dcc0be653ec8a23c569137efaada298ac1a0cf556ae32a75c0fa8a8
+scenarios: all 12 frozen scenarios
+starts: 5
+start_definitions:
+- shifted previous plan
+- maximum feasible power
+- zero target repaired for slew
+- half maximum repaired for slew
+- seeded uniform target repaired for slew
+optimizer: SLSQP
+maxiter: 80
+ftol: 1.0e-09
+eps_W: 1.0
+scope: Original SLSQP already has shifted warm start and two optimizer starts; this
+  diagnostic expands to five feasible starts. Same ROM/objective/constraint formulas.

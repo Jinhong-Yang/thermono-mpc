@@ -1,0 +1,23 @@
+schema: thermono-diagnostic-1
+id: D7
+status: POST_FREEZE_DIAGNOSTIC
+base_protocol: configs/frozen/protocol_v2.yaml
+base_protocol_sha256: 339859e89dcc0be653ec8a23c569137efaada298ac1a0cf556ae32a75c0fa8a8
+grids:
+- 16
+- 32
+- 64
+- 128
+duration_s: 300
+max_step_s: 2.0
+power_W:
+- 800.0
+- 1200.0
+- 1000.0
+process_config: ProcessConfig defaults, matching original numerical_check.py
+field_projection: Coarse cell averages replicated onto 64 grid; 128-grid cell averages
+  averaged 2x2 onto 64. No interpolation of cell centers.
+field_L2_rms_K: sqrt(mean((projected_field - field64)^2))
+relative_L2: norm(difference)/norm(field64)
+interpretation: 64 is a comparison reference, not an exact solution; nonmonotone errors
+  do not establish a convergence order.

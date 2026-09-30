@@ -1,0 +1,24 @@
+schema: thermono-diagnostic-1
+id: D3
+status: POST_FREEZE_DIAGNOSTIC
+base_protocol: configs/frozen/protocol_v2.yaml
+base_protocol_sha256: 339859e89dcc0be653ec8a23c569137efaada298ac1a0cf556ae32a75c0fa8a8
+grid:
+- 16
+- 16
+trajectory_seeds:
+- 9501
+- 9502
+- 9503
+- 9504
+- 9505
+- 9506
+- 9507
+- 9508
+model_seeds:
+- 101
+- 202
+- 303
+comparison: Same power arrays/material draws as frozen 32-grid trajectories; generate
+  scoring targets on 16 grid. Whole-trajectory intervals, averaging model seeds inside
+  each trajectory.

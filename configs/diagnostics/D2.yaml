@@ -1,0 +1,48 @@
+schema: thermono-diagnostic-1
+id: D2
+status: POST_FREEZE_DIAGNOSTIC
+base_protocol: configs/frozen/protocol_v2.yaml
+base_protocol_sha256: 339859e89dcc0be653ec8a23c569137efaada298ac1a0cf556ae32a75c0fa8a8
+method: Read D1 candidate/elite/selected plans and original training power sequences;
+  compare per-zone power, signed/absolute slew, and 12-step energy. Report empirical
+  training-range exceedance, not proof of distributional equivalence.
+histogram_bins_power_W:
+- 0
+- 100
+- 200
+- 300
+- 400
+- 500
+- 600
+- 700
+- 800
+- 900
+- 1000
+- 1100
+- 1200
+- 1300
+- 1400
+- 1500
+- 1600
+- 1700
+- 1800
+- 1900
+- 2000
+histogram_bins_slew_W:
+- -400
+- -350
+- -300
+- -250
+- -200
+- -150
+- -100
+- -50
+- 0
+- 50
+- 100
+- 150
+- 200
+- 250
+- 300
+- 350
+- 400

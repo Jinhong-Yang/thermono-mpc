@@ -1,0 +1,20 @@
+schema: thermono-diagnostic-1
+id: D5
+status: POST_FREEZE_DIAGNOSTIC
+base_protocol: configs/frozen/protocol_v2.yaml
+base_protocol_sha256: 339859e89dcc0be653ec8a23c569137efaada298ac1a0cf556ae32a75c0fa8a8
+candidates:
+- 64
+- 256
+iterations:
+- 3
+- 6
+elite: 8
+representative_scenarios:
+- N03
+- S01
+- F01
+models:
+- ROM
+- data_only_seed101
+other_settings: inherit frozen protocol

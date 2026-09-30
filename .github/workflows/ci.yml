@@ -37,3 +37,5 @@ jobs:
           thermono-mpc demo --profile cpu-smoke
       - name: Secondary synthetic example
         run: python examples/reuse_second_case.py
+      - name: User-defined predictor example
+        run: python examples/custom_predictor.py

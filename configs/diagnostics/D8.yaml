@@ -1,0 +1,13 @@
+schema: thermono-diagnostic-1
+id: D8
+status: POST_FREEZE_DIAGNOSTIC
+base_protocol: configs/frozen/protocol_v2.yaml
+base_protocol_sha256: 339859e89dcc0be653ec8a23c569137efaada298ac1a0cf556ae32a75c0fa8a8
+data_generation: one complete 24/6/6 trajectory generation using inherited seeds;
+  verify array archive hashes
+training: reuse measured D4 weight 0.01, seed101, full training (no double counting)
+prediction: reuse measured D4 weight 0.01, 8 held-out trajectories x 13 windows
+gpu_time_definition: CUDA event elapsed stream interval, including host-side idle
+  gaps; not summed GPU kernel active time
+scope: Re-measured post hoc on the same host; never attributed retrospectively to
+  original runs.

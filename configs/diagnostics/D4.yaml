@@ -1,0 +1,23 @@
+schema: thermono-diagnostic-1
+id: D4
+status: POST_FREEZE_DIAGNOSTIC
+base_protocol: configs/frozen/protocol_v2.yaml
+base_protocol_sha256: 339859e89dcc0be653ec8a23c569137efaada298ac1a0cf556ae32a75c0fa8a8
+physics_weights:
+- 0.0
+- 0.001
+- 0.01
+- 0.1
+seed: 101
+epochs: 40
+patience: 10
+representative_scenarios:
+- N03
+- S01
+- F01
+cost_pilot_epochs: 1
+maximum_estimated_gpu_hours: 4
+cost_estimate_margin: 1.5
+evaluation_allowance_s: 1800
+scope: Exploratory single-seed sweep; inherited training/validation data and optimizer
+  settings. No changes to frozen models.

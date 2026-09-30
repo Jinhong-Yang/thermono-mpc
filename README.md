@@ -16,6 +16,7 @@ thermono-mpc doctor
 thermono-mpc demo --profile cpu-smoke
 python examples/cpu_quickstart.py
 python examples/reuse_second_case.py
+python examples/custom_predictor.py
 python examples/process_boundary_demo.py
 python scripts/runtime_overload_probe.py
 ```
@@ -49,4 +50,7 @@ The field and zone dynamics are synthetic design assumptions. The front/back fac
 
 ## License and citation
 
-Pending rights-holder approval. The preferred candidate is the OSI-approved MIT license. Public release metadata, exact version link and dataset citation will be added only after verification.
+Apache-2.0 licensed software release (2026). Copyright 2026 JInhong Yang.
+See `LICENSE`, `NOTICE`, and `CITATION.cff`. Third-party dependencies retain
+their respective terms in `THIRD_PARTY_NOTICES.md`. Archived version links
+will be added after the release records are published and verified.
