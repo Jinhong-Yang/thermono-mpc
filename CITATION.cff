@@ -14,9 +14,9 @@ authors:
     affiliation: Department of Medical Information Technology, Inje University
     email: jinhong@inje.ac.kr
 repository-code: "https://github.com/Jinhong-Yang/thermono-mpc"
-version: 0.1.0
-doi: 10.5281/zenodo.23051699
-date-released: 2026-09-30
+version: 0.1.1
+doi: 10.5281/zenodo.23073711
+date-released: 2026-10-01
 license: Apache-2.0
 keywords:
   - thermal process control

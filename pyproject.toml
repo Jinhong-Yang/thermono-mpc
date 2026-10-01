@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "thermono-mpc"
-version = "0.1.0"
+version = "0.1.1"
 description = "Synthetic multi-zone heat treatment control with neural operators and deadline-aware MPC"
 readme = "README.md"
 license = "Apache-2.0"
@@ -15,7 +15,7 @@ classifiers = ["Programming Language :: Python :: 3", "Operating System :: OS In
 
 [project.optional-dependencies]
 torch = ["torch>=2.7"]
-dev = ["pytest>=8", "build>=1", "twine>=6", "torch>=2.7"]
+dev = ["pytest>=8", "pytest-cov>=7", "build>=1", "twine>=6", "torch>=2.7"]
 paper = ["matplotlib>=3.9"]
 
 [project.scripts]

@@ -1,0 +1,10 @@
+scope: post-freeze reviewer diagnostic
+base_protocol_sha256: 339859e89dcc0be653ec8a23c569137efaada298ac1a0cf556ae32a75c0fa8a8
+scenarios: [N03, S01, F01]
+model_seeds: [101, 202, 303]
+screening: all 1890 saved calls; 192 candidate occurrences per call; inf costs encode thermal rejection after finite validation
+cross_evaluation: all 1620 neural calls; reselect ROM at the same projected state and held power; cold CEM seed scenario.seed + 100000 + cycle
+plant_comparison: same delay-aligned true starting state for both plans; own-plan realization from D1; ROM-plan clone newly executed
+response_targets_W: [0, 500, 1000, 2000]
+monotonicity_tolerance_K: 0.00001
+aggregation: within episode first; then equal scenario means per checkpoint; correlated calls are descriptive

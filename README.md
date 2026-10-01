@@ -58,7 +58,7 @@ The field and zone dynamics are synthetic design assumptions. The front/back fac
 
 ## License and citation
 
-Apache-2.0 licensed software release (2026). Copyright 2026 JInhong Yang.
+Apache-2.0 licensed software release (2026). Copyright 2026 Jinhong Yang.
 See `LICENSE`, `NOTICE`, and `CITATION.cff`. Third-party dependencies retain
 their respective terms in `THIRD_PARTY_NOTICES.md`.
 
@@ -69,3 +69,18 @@ Version-specific archive identifiers:
 
 The research deposit contains a SHA-256 inventory and `verify_archive.py`.
 It preserves frozen evidence and stores exploratory diagnostics separately.
+
+
+## v0.1.1 reviewer diagnostics
+
+Version 0.1.1 adds [D9/D10](docs/reviewer_diagnostics.md), separate source
+snapshots, regression checks and Python 3.11/3.12/3.13 CI jobs. Frozen benchmark
+algorithms and outputs remain unchanged. A small field-prediction error does
+not imply good plan ordering: the diagnostics compare common-state plans and
+inspect candidate feasibility and power response. Original SLSQP replay records
+show 2,035 of 2,158 calls ending after one iteration, **not all calls**; 123
+iterate further. The D6 five-start diagnostic separately has 5,395 one-iteration
+calls. The variable-scaled single-start D10 diagnostic has mean control RMSE
+10.64 K over 12 scenarios, compared with the unchanged 41.36 K frozen result.
+The single-start intervention and scaling are specified together; this is not
+a general ranking of optimizers. Research data are synthetic.

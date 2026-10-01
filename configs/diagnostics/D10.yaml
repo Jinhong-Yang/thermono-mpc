@@ -1,0 +1,9 @@
+scope: post-freeze reviewer diagnostic
+base_protocol_sha256: 339859e89dcc0be653ec8a23c569137efaada298ac1a0cf556ae32a75c0fa8a8
+original_replay: all 12 scenarios; record both local starts in each valid selection
+perturbations: first 10 N03 selections, both starts; change one setting at a time
+variants: [baseline, eps_2W, eps_default, objective_x1e6, variables_unit]
+corrected_intervention: variables divided by 2000 W; one repaired shifted warm start; eps 0.0005 in normalized coordinates (1 W); physical objective/constraints unchanged
+corrected_maxiter: 80
+corrected_ftol: 0.000000001
+clipping_audit: frozen SLSQP clips only starting plans; no sequential clipping in its objective
