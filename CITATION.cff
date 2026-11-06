@@ -1,25 +1,26 @@
 cff-version: 1.2.0
-message: "If you use ThermoNO-MPC, cite this versioned research software."
+message: If you use ThermoNO-MPC, cite this versioned research software.
 type: software
-title: "ThermoNO-MPC: A reproducible toolkit for neural-operator predictive control of multi-zone thermal processes"
+title: 'ThermoNO-MPC: A reproducible toolkit for neural-operator predictive control
+  of multi-zone thermal processes'
 authors:
-  - family-names: Park
-    given-names: Hyojin
-    affiliation: Gyeongnam Intelligence Innovation Center (GIIC), Kyungnam University
-  - family-names: Yoo
-    given-names: Nam-Hyun
-    affiliation: Department of Computer Engineering, Kyungnam University
-  - family-names: Yang
-    given-names: Jinhong
-    affiliation: Department of Medical Information Technology, Inje University
-    email: jinhong@inje.ac.kr
-repository-code: "https://github.com/Jinhong-Yang/thermono-mpc"
-version: 0.1.1
-doi: 10.5281/zenodo.23073711
-date-released: 2026-10-01
+- family-names: Park
+  given-names: Hyojin
+  affiliation: Gyeongnam Intelligence Innovation Center (GIIC), Kyungnam University
+- family-names: Yoo
+  given-names: Nam-Hyun
+  affiliation: Department of Computer Engineering, Kyungnam University
+- family-names: Yang
+  given-names: Jinhong
+  affiliation: Department of Medical Information Technology, Inje University
+  email: jinhong@inje.ac.kr
+repository-code: https://github.com/Jinhong-Yang/thermono-mpc
+version: 0.1.2
 license: Apache-2.0
 keywords:
-  - thermal process control
-  - neural operator
-  - model predictive control
-  - reproducible research
+- thermal process control
+- neural operator
+- model predictive control
+- reproducible research
+doi: 10.5281/zenodo.24019479
+date-released: '2026-11-07'

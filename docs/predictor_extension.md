@@ -1,5 +1,10 @@
 # Extending a predictor
 
+For the full responsive-model workflow, see
+[reusable diagnostics](reusable_diagnostics.md) and run
+`python examples/predictor_workflow.py --output outputs/predictor_workflow`.
+The persistence example below is retained as a smaller interface-only example.
+
 `examples/custom_predictor.py` implements the public `Predictor` protocol and
 passes it directly to `CEMMPC`. Run it on CPU with:
 
@@ -48,6 +53,10 @@ invalid intervals and integration with the shared optimizer.
 | New control interval or prediction horizon | Contract design and physical components | Adapt the architecture/rollout and train for the new interval or horizon |
 | Alternative predictor | CEM, command records, validation and scoring | Implement the contract and compare under the same observation and optimization settings |
 
-Released FNO checkpoints predict 12 steps at 10 seconds per step. Their
-implementation accepts the shared `dt_s` argument but the learned output is
-tied to that trained interval. Inference uses nominal material channels.
+Released original FNO checkpoints predict 12 steps at 10 seconds per step.
+The revision implementation checks that `dt_s` equals the checkpoint interval
+and rejects unsupported values before inference. It also checks the horizon.
+New metadata records `control_dt_s`; recognized original manifests use their
+verified 10-second interval. Unknown legacy metadata cannot silently select one.
+Inference uses nominal material channels by default; supplying true material
+context is a separately labelled oracle diagnostic.

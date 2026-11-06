@@ -17,6 +17,7 @@ thermono-mpc demo --profile cpu-smoke
 python examples/cpu_quickstart.py
 python examples/reuse_second_case.py
 python examples/custom_predictor.py
+python examples/predictor_workflow.py --output outputs/predictor_workflow
 python examples/process_boundary_demo.py
 python scripts/runtime_overload_probe.py
 ```
@@ -28,6 +29,31 @@ The CPU examples run without PyTorch. `reuse_second_case.py` changes geometry, m
 Install the optional PyTorch dependency with `python -m pip install -e ".[torch]"`. The tested CUDA environment is documented in `docs/hardware_profile.md`; this does not imply support for a PLC, Jetson or other edge device. Checkpoints contain numeric arrays in `.npz` plus JSON metadata and SHA-256, and are loaded with pickling disabled.
 
 The model takes an estimated current temperature field, measured zone temperatures, nominal material context and the full proposed future heater-power sequence. It predicts a full field and zone-temperature trajectory. The data-only and physics-informed variants use the same architecture. A low rollout error does not guarantee that an optimizer will choose useful actions.
+
+The original released neural checkpoints support 12 intervals of 10 seconds.
+Unsupported time intervals or horizons raise an informative error before inference.
+Other predictor adapters can declare broader capabilities; the callable signature
+does not imply that every model supports every interval or horizon.
+
+## Reuse the complete diagnostic workflow
+
+`examples/predictor_workflow.py` implements a responsive linear thermal predictor,
+evaluates a known input plan, runs a 30-cycle closed loop and compares competing
+plans at three common states. It runs on CPU without PyTorch. The model adapter
+changes; `CEMMPC`, `run_episode`, `same_plan_replay` and
+`common_state_comparison` are reused directly. See
+[reusable diagnostics](docs/reusable_diagnostics.md) for exact inputs, state
+alignment, objective callbacks and simulator requirements. Counterfactual outcomes
+cannot be recovered from measured sensor logs alone.
+
+Revision experiments are distinct from the frozen benchmark and D1-D11. The
+configured SLSQP comparator crosses variable scaling with local-start count
+without changing the physical problem. A grid adapter holds the plant/observer
+grid fixed while changing the prediction path. A sensor schedule can clear
+disturbances at a declared cycle for recovery studies. These are research tools;
+their configuration and validation must accompany any reported result.
+The [revision computation guide](docs/revision_protocol.md) describes the
+separate data lineage, controlled comparisons and reproduction paths.
 
 ## Reproduce the frozen benchmark
 
@@ -64,12 +90,16 @@ their respective terms in `THIRD_PARTY_NOTICES.md`.
 
 Version-specific archive identifiers:
 
-- [Software v0.1.0](https://doi.org/10.5281/zenodo.23051699).
-- [Synthetic data, frozen checkpoints and post-freeze diagnostics](https://doi.org/10.5281/zenodo.23051736).
+- [Software v0.1.2](https://doi.org/10.5281/zenodo.24019479).
+- [Revision computation v0.1.2](https://doi.org/10.5281/zenodo.24019545).
+- Historical [software v0.1.1](https://doi.org/10.5281/zenodo.23073711)
+  and [research data v0.1.1](https://doi.org/10.5281/zenodo.23051736) remain preserved.
 
-The research deposit contains a SHA-256 inventory and `verify_archive.py`.
-It preserves frozen evidence and stores exploratory diagnostics separately.
-
+The revision computation archive includes a per-file SHA-256 inventory,
+`verify_revision_archive.py`, and separate saved-record audit/full-rerun commands
+in `REPRODUCE_R1.txt`. See the [revision guide](docs/revision_protocol.md) for
+experimental units and scope. The original benchmark and historical diagnostics
+remain distinct from the new computation.
 
 ## v0.1.1 reviewer diagnostics
 

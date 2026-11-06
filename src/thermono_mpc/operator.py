@@ -82,24 +82,44 @@ class DirectFNO(nn.Module):
 
 class TorchPredictor:
     def __init__(self, model: DirectFNO, config: ProcessConfig, device: str = "cpu",
-                 version: str = "untrained"):
+                 version: str = "untrained", *, trained_dt_s: float = 10.0,
+                 material_context: np.ndarray | None = None):
+        if not np.isfinite(trained_dt_s) or trained_dt_s <= 0:
+            raise ValueError("trained_dt_s must be a finite positive interval")
         self.model = model.to(device).eval()
         self.config = config
         self.device = device
         self.version = version
+        self.trained_dt_s = float(trained_dt_s)
+        self.material_context = None if material_context is None else np.asarray(material_context, dtype=np.float32).copy()
+        if self.material_context is not None and (self.material_context.shape != (3,) or
+                not np.all(np.isfinite(self.material_context)) or np.any(self.material_context <= 0)):
+            raise ValueError("material_context requires three positive density/capacity/conductivity ratios")
 
     @torch.inference_mode()
     def predict(self, field_K: np.ndarray, zones_K: np.ndarray,
                 candidates_W: np.ndarray, dt_s: float) -> Prediction:
         c = self.config
+        if not np.isfinite(dt_s) or not np.isclose(dt_s, self.trained_dt_s, rtol=0, atol=1e-9):
+            raise ValueError(f"This checkpoint supports dt_s={self.trained_dt_s:g} only; received {dt_s!r}. Adapt and retrain for another interval.")
         u = np.asarray(candidates_W, dtype=np.float32)
         if u.ndim != 3 or u.shape[1:] != (self.model.horizon, c.zones):
-            raise ValueError("candidate shape mismatch")
+            raise ValueError(f"This checkpoint requires [B,{self.model.horizon},{c.zones}] candidate powers; received {u.shape}")
+        if len(u) == 0 or not np.all(np.isfinite(u)):
+            raise ValueError("candidate powers require a nonempty batch of finite values")
+        if np.shape(field_K) != (c.ny, c.nx) or np.shape(zones_K) != (c.zones,):
+            raise ValueError("initial field/zone shape differs from the configured prediction grid")
+        if not np.all(np.isfinite(field_K)) or not np.all(np.isfinite(zones_K)):
+            raise ValueError("initial temperatures must be finite")
         b = len(u)
         tfield = torch.as_tensor(np.broadcast_to(field_K, (b, c.ny, c.nx)).copy(), dtype=torch.float32, device=self.device)
         tzone = torch.as_tensor(np.broadcast_to(zones_K, (b, c.zones)).copy(), dtype=torch.float32, device=self.device)
         tcontrol = torch.as_tensor(u, dtype=torch.float32, device=self.device)
-        out_field, out_zone = self.model(tfield, tzone, tcontrol)
+        if self.material_context is None:
+            out_field, out_zone = self.model(tfield, tzone, tcontrol)
+        else:
+            material = torch.as_tensor(np.broadcast_to(self.material_context, (b, 3)).copy(), dtype=torch.float32, device=self.device)
+            out_field, out_zone = self.model(tfield, tzone, tcontrol, material)
         return Prediction(out_field.cpu().numpy(), out_zone.cpu().numpy(), self.version)
 
 

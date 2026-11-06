@@ -3,6 +3,9 @@
 This comparison describes the primary documentation inspected on 2026-09-30.
 These libraries were not timed or benchmarked on the ThermoNO-MPC process.
 An unmentioned feature is not evidence that a package lacks it.
+The NeuroMANCER, do-mpc and CasADi scope statements were rechecked against their
+official documentation on 2026-11-07 for the revision. No cross-library runtime
+or control-performance benchmark is implied by this documentation comparison.
 
 | Software | Documented focus | Relationship to this package |
 |---|---|---|
@@ -17,3 +20,7 @@ The supported contribution is the implemented combination of a conservative
 thermal-field plant, candidate-conditioned operator prediction, matched CEM
 comparisons, command validation and traceable results. No first-use claim for
 neural operators in MPC, or superiority to these tools, is made.
+The reusable `same_plan_replay` and `common_state_comparison` interfaces accept
+caller-supplied replay and objective callbacks. The responsive linear-predictor
+example demonstrates reuse of optimization, episode evaluation and those
+diagnostic calculations without model-specific edits to the analysis code.

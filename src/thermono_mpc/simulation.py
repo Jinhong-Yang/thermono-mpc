@@ -35,13 +35,20 @@ def make_predictor(config: ProcessConfig, model_metadata: Path, device: str):
     import json
     from .operator import DirectFNO, TorchPredictor, load_npz_weights
     metadata = json.loads(model_metadata.read_text(encoding="utf-8"))
+    trained_dt = metadata.get("control_dt_s")
+    if trained_dt is None:
+        # Exact archived training manifest, verified from the submitted baseline.
+        legacy_intervals = {"d7dd34e52775c71eca6645f6092b553f5ad9bfaf67a6a75e4d03ff9a90d3d5a1": 10.0}
+        trained_dt = legacy_intervals.get(metadata.get("manifest_sha256"))
+        if trained_dt is None:
+            raise ValueError("Checkpoint metadata lacks control_dt_s and is not a recognized legacy training manifest")
     arch = metadata["architecture"]
     if arch["zones"] != config.zones:
         raise ValueError("checkpoint zone count differs from process")
     model = DirectFNO(arch["zones"], arch["horizon"], arch["width"],
                       arch["layers"], arch["modes"])
     load_npz_weights(model, str(model_metadata.parent / metadata["weights"]))
-    return TorchPredictor(model, config, device, metadata["weights_sha256"][:12])
+    return TorchPredictor(model, config, device, metadata["weights_sha256"][:12], trained_dt_s=trained_dt)
 
 
 def run_episode(config: ProcessConfig, scenario: Scenario, controller_name: str,
@@ -51,7 +58,8 @@ def run_episode(config: ProcessConfig, scenario: Scenario, controller_name: str,
                 device: str = "cpu", mpc_settings: MPCConfig | None = None,
                 deadline_s: float = .5,
                 pid_gains: tuple[float, float] = (15., .01),
-                controller_transform=None, diagnostic_hook=None) -> tuple[dict, list[dict]]:
+                controller_transform=None, diagnostic_hook=None,
+                predictor=None, sensor_schedule=None) -> tuple[dict, list[dict]]:
     if observation not in ("partial", "full"):
         raise ValueError("invalid observation mode")
     actual = replace(config, rho=config.rho * scenario.rho_scale,
@@ -67,6 +75,10 @@ def run_episode(config: ProcessConfig, scenario: Scenario, controller_name: str,
         raise ValueError("horizon mismatch")
     if controller_name == "B0_PID":
         mpc = None
+    elif controller_name == "CUSTOM_CEM":
+        if predictor is None:
+            raise ValueError("CUSTOM_CEM requires a predictor implementing predict(field_K, zones_K, candidates_W, dt_s)")
+        mpc = CEMMPC(config, predictor, settings, scenario.seed)
     elif controller_name == "B1_ROM_CEM":
         mpc = CEMMPC(config, rom, settings, scenario.seed)
     elif controller_name == "B1b_ROM_SLSQP":
@@ -91,10 +103,15 @@ def run_episode(config: ProcessConfig, scenario: Scenario, controller_name: str,
             state_before = state.copy() if diagnostic_hook is not None else None
             result = None
             start_ns = time.perf_counter_ns()
+            noise, dropout = scenario.sensor_noise_K, scenario.sensor_dropout
+            if sensor_schedule is not None:
+                noise, dropout = sensor_schedule(cycle, scenario)
+                if not np.isfinite([noise, dropout]).all() or noise < 0 or not 0 <= dropout <= 1:
+                    raise ValueError("sensor_schedule must return finite noise >= 0 and dropout in [0,1]")
             packet = observer.observe(state.field, state.zones,
                                       sample_time_ns=start_ns, state_id=cycle,
-                                      noise_std_K=scenario.sensor_noise_K,
-                                      dropout_probability=scenario.sensor_dropout,
+                                      noise_std_K=noise,
+                                      dropout_probability=dropout,
                                       rng=rng)
             estimate = observer.update(packet, held_W, dt_s)
             if observation == "full":

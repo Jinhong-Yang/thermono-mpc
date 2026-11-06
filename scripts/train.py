@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import random
 import sys
+import time
 
 import numpy as np
 import torch
@@ -50,6 +51,7 @@ def train(manifest: Path, output: Path, variant: str, seed: int, *,
           physics_weight: float, width: int, layers: int, modes: int,
           patience: int, device: str) -> dict:
     info = json.loads(manifest.read_text(encoding="utf-8"))
+    started = time.perf_counter()
     c = ProcessConfig(**info["config"])
     h = info["horizon"]
     random.seed(seed); np.random.seed(seed); torch.manual_seed(seed)
@@ -95,6 +97,8 @@ def train(manifest: Path, output: Path, variant: str, seed: int, *,
             validation = float(supervised_loss(vf, vz, valid_data["target_field"], valid_data["target_zone"]))
         log.append({"epoch": epoch, "train_data_loss": total_data / len(order),
                     "train_physics_loss": total_physics / len(order), "validation_loss": validation})
+        print(json.dumps({"variant": variant, "seed": seed, "epoch": epoch,
+                          "validation_loss": validation, "elapsed_s": time.perf_counter()-started}), flush=True)
         if validation < best - 1e-8:
             best = validation
             save_weights(model, weights)
@@ -113,6 +117,12 @@ def train(manifest: Path, output: Path, variant: str, seed: int, *,
               "architecture": {"zones": c.zones, "horizon": h, "width": width,
                                "layers": layers, "modes": modes},
               "physics_weight": physics_weight, "device": device,
+              "control_dt_s": info["control_dt_s"],
+              "training_windows": len(train_data["field"]), "validation_windows": len(valid_data["field"]),
+              "optimizer_updates": len(log) * ((len(train_data["field"])+batch_size-1)//batch_size),
+              "wall_s": time.perf_counter()-started,
+              "training_config": {"epochs": epochs, "batch_size": batch_size, "learning_rate": learning_rate,
+                                  "patience": patience, "optimizer": "AdamW", "gradient_clip_norm": 1.0},
               "torch_version": torch.__version__}
     (output / f"{variant}_seed{seed}.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     return result

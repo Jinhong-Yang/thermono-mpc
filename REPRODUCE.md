@@ -85,3 +85,34 @@ original six checkpoints with D4's exploratory training runs.
 `docs/predictor_extension.md` documents all array dimensions, units, forecast
 alignment and retraining requirements. `examples/custom_predictor.py` is an
 executable CPU example of the public prediction contract and CEM integration.
+
+## 5. Revision diagnostic API and responsive CPU example
+
+Run from the versioned revision software source:
+
+```text
+python examples/predictor_workflow.py --output outputs/predictor_workflow
+```
+
+The output folder contains a known-plan forecast, closed-loop trace, common-state
+diagnostic records and saved numeric plans/forecasts/replays. The tutorial changes
+only the model adapter; no FNO/PINO checkpoint is needed. Its 30-cycle configuration
+is distinct from the 90-cycle frozen benchmark. See `docs/reusable_diagnostics.md`
+for state alignment, compatible units/shapes, and the required replay simulator.
+
+New checkpoint metadata stores the trained interval. The loader recognizes the
+original training-manifest hash for the archived 10-second checkpoints, and rejects
+unknown legacy metadata instead of inferring an interval. A neural checkpoint's
+horizon and interval are checked before inference. Run `python -m pytest -q`
+after installing the test dependencies to check these contracts.
+
+The separate revision computational package contains the predeclared training,
+grid/material, scaling and constraint-stress protocols, exact executed source
+snapshots, complete outputs and independent analysis. Do not put its new data or
+models into the original frozen directories. Full reruns are expensive and require
+the documented GPU environment; the CPU tutorial is the short reuse check.
+See [the controlled computation guide](docs/revision_protocol.md) and the
+archive's `REPRODUCE_R1.txt` for integrity verification, readback auditing and
+full-rerun commands. Their output directories remain separate from the archive.
+
+Version 0.1.2 computation: https://doi.org/10.5281/zenodo.24019545.
